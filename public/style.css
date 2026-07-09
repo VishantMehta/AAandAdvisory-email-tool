@@ -190,6 +190,34 @@ select option {
     background: var(--bg-color);
 }
 
+.csv-upload-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.csv-upload-group select {
+    flex-grow: 1;
+}
+
+.upload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.875rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.upload-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
 .toggle-group {
     display: flex;
     align-items: center;

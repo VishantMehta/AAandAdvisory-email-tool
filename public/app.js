@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     const templateSelect = document.getElementById('template');
     const csvSelect = document.getElementById('csv');
+    const csvUpload = document.getElementById('csv-upload');
     const terminal = document.getElementById('terminal');
     const clearLogsBtn = document.getElementById('clear-logs');
     
@@ -34,7 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 templateSelect.appendChild(opt);
             });
 
-            // Load CSVs
+            await fetchCSVs();
+
+            // Update status
+            await fetchStatus();
+        } catch (err) {
+            appendLog('error', `Failed to load initialization data: ${err.message}`);
+        }
+    }
+
+    async function fetchCSVs() {
+        try {
             const csvRes = await fetch('/api/csvs');
             const csvs = await csvRes.json();
             csvSelect.innerHTML = '<option value="" disabled selected>Select contact list</option>';
@@ -44,11 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 opt.textContent = c;
                 csvSelect.appendChild(opt);
             });
-
-            // Update status
-            await fetchStatus();
         } catch (err) {
-            appendLog('error', `Failed to load initialization data: ${err.message}`);
+            appendLog('error', `Failed to fetch CSVs: ${err.message}`);
         }
     }
 
@@ -146,6 +154,36 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             appendLog('error', `Network error: ${err.message}`);
         }
+    });
+
+    csvUpload.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('csvFile', file);
+
+        appendLog('sys', `Uploading ${file.name}...`);
+        
+        try {
+            const res = await fetch('/api/upload-csv', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                appendLog('sys', `Success: ${data.message}`);
+                await fetchCSVs();
+                csvSelect.value = data.filename;
+            } else {
+                appendLog('error', `Upload failed: ${data.error}`);
+            }
+        } catch (err) {
+            appendLog('error', `Upload error: ${err.message}`);
+        }
+        
+        e.target.value = ''; // Reset input
     });
 
     clearLogsBtn.addEventListener('click', () => {

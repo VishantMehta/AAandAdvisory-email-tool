@@ -6,6 +6,29 @@ const path = require('path');
 const EventEmitter = require('events');
 const { runCampaign } = require('./src/campaign');
 const rateLimiter = require('./src/rateLimiter');
+const multer = require('multer');
+
+// Configure multer for CSV uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'data'));
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || '.csv';
+        const name = path.basename(file.originalname, ext);
+        cb(null, `${name}${ext}`);
+    }
+});
+const upload = multer({ 
+    storage,
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only CSV files are allowed'));
+        }
+    }
+});
 
 const app = express();
 app.use(cors());
@@ -50,6 +73,14 @@ app.get('/api/csvs', (req, res) => {
     if (!fs.existsSync(dataDir)) return res.json([]);
     const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.csv'));
     res.json(files);
+});
+
+app.post('/api/upload-csv', upload.single('csvFile'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded or invalid file type' });
+    }
+    logger.log(`[INFO] Uploaded new contact list: ${req.file.filename}`);
+    res.json({ message: 'File uploaded successfully', filename: req.file.filename });
 });
 
 app.post('/api/campaign/start', async (req, res) => {
