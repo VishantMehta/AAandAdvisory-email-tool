@@ -60,14 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
             appendLog('error', `Failed to fetch templates: ${err.message}`);
         }
     }
-
-            // Update status
-            await fetchStatus();
-        } catch (err) {
-            appendLog('error', `Failed to load initialization data: ${err.message}`);
-        }
-    }
-
     async function fetchCSVs() {
         try {
             const csvRes = await fetch('/api/csvs');
