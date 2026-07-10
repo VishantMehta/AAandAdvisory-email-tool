@@ -190,16 +190,16 @@ select option {
     background: var(--bg-color);
 }
 
-.csv-upload-group {
+.action-group {
     display: flex;
     gap: 0.5rem;
 }
 
-.csv-upload-group select {
+.action-group select {
     flex-grow: 1;
 }
 
-.upload-btn {
+.action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -212,10 +212,15 @@ select option {
     transition: all 0.2s ease;
 }
 
-.upload-btn:hover {
+.action-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.1);
     color: var(--primary);
     border-color: var(--primary);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .toggle-group {
@@ -442,6 +447,128 @@ input:checked + .slider:before {
 }
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/* Modal Styling */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 1200px;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.modal-header h2 span {
+    color: var(--primary);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.sm-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    width: auto;
+}
+
+.modal-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.editor-pane, .preview-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.5rem;
+}
+
+.editor-pane {
+    border-right: 1px solid var(--glass-border);
+}
+
+.modal-body label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+#template-code {
+    flex: 1;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    padding: 1rem;
+    resize: none;
+    outline: none;
+}
+
+#template-code:focus {
+    border-color: var(--primary);
+}
+
+#template-preview {
+    flex: 1;
+    width: 100%;
+    background: #fff; /* Email previews need white background usually */
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+}
+
+@media (max-width: 900px) {
+    .modal-body {
+        flex-direction: column;
+    }
+    .editor-pane {
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+    }
 }
 
 @media (max-width: 768px) {

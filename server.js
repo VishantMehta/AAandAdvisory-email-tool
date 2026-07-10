@@ -8,6 +8,10 @@ const { runCampaign } = require('./src/campaign');
 const rateLimiter = require('./src/rateLimiter');
 const multer = require('multer');
 
+// Ensure directories exist
+if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
+if (!fs.existsSync(path.join(__dirname, 'templates'))) fs.mkdirSync(path.join(__dirname, 'templates'));
+
 // Configure multer for CSV uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -26,6 +30,28 @@ const upload = multer({
             cb(null, true);
         } else {
             cb(new Error('Only CSV files are allowed'));
+        }
+    }
+});
+
+// Configure multer for HTML template uploads
+const templateStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'templates'));
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || '.html';
+        const name = path.basename(file.originalname, ext);
+        cb(null, `${name}${ext}`);
+    }
+});
+const uploadTemplate = multer({ 
+    storage: templateStorage,
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'text/html' || file.originalname.endsWith('.html')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only HTML files are allowed'));
         }
     }
 });
@@ -81,6 +107,35 @@ app.post('/api/upload-csv', upload.single('csvFile'), (req, res) => {
     }
     logger.log(`[INFO] Uploaded new contact list: ${req.file.filename}`);
     res.json({ message: 'File uploaded successfully', filename: req.file.filename });
+});
+
+app.post('/api/upload-template', uploadTemplate.single('templateFile'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded or invalid file type' });
+    }
+    logger.log(`[INFO] Uploaded new template: ${req.file.filename}`);
+    res.json({ message: 'Template uploaded successfully', filename: req.file.filename });
+});
+
+app.get('/api/template-content', (req, res) => {
+    const { name } = req.query;
+    if (!name) return res.status(400).json({ error: 'Template name required' });
+    const templatePath = path.join(__dirname, 'templates', name);
+    if (!fs.existsSync(templatePath)) return res.status(404).json({ error: 'Template not found' });
+    
+    const content = fs.readFileSync(templatePath, 'utf8');
+    res.json({ content });
+});
+
+app.put('/api/template-content', (req, res) => {
+    const { name, content } = req.body;
+    if (!name || content === undefined) return res.status(400).json({ error: 'Template name and content required' });
+    const templatePath = path.join(__dirname, 'templates', name);
+    if (!fs.existsSync(templatePath)) return res.status(404).json({ error: 'Template not found' });
+    
+    fs.writeFileSync(templatePath, content, 'utf8');
+    logger.log(`[INFO] Updated template: ${name}`);
+    res.json({ message: 'Template updated successfully' });
 });
 
 app.post('/api/campaign/start', async (req, res) => {

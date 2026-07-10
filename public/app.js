@@ -2,10 +2,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('campaign-form');
     const startBtn = document.getElementById('start-btn');
     const templateSelect = document.getElementById('template');
+    const templateUpload = document.getElementById('template-upload');
+    const editTemplateBtn = document.getElementById('edit-template-btn');
     const csvSelect = document.getElementById('csv');
     const csvUpload = document.getElementById('csv-upload');
     const terminal = document.getElementById('terminal');
     const clearLogsBtn = document.getElementById('clear-logs');
+    
+    // Modal elements
+    const editorModal = document.getElementById('editor-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const saveTemplateBtn = document.getElementById('save-template-btn');
+    const templateCode = document.getElementById('template-code');
+    const templatePreview = document.getElementById('template-preview');
+    const editingTemplateName = document.getElementById('editing-template-name');
     
     // Status indicators
     const statusIndicator = document.querySelector('.status-indicator');
@@ -24,7 +34,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchData() {
         try {
-            // Load templates
+            await fetchTemplates();
+            await fetchCSVs();
+
+            // Update status
+            await fetchStatus();
+        } catch (err) {
+            appendLog('error', `Failed to load initialization data: ${err.message}`);
+        }
+    }
+
+    async function fetchTemplates() {
+        try {
             const tplRes = await fetch('/api/templates');
             const templates = await tplRes.json();
             templateSelect.innerHTML = '<option value="" disabled selected>Select template</option>';
@@ -34,8 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 opt.textContent = t;
                 templateSelect.appendChild(opt);
             });
-
-            await fetchCSVs();
+            editTemplateBtn.disabled = true;
+        } catch (err) {
+            appendLog('error', `Failed to fetch templates: ${err.message}`);
+        }
+    }
 
             // Update status
             await fetchStatus();
@@ -184,6 +208,98 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         e.target.value = ''; // Reset input
+    });
+
+    templateSelect.addEventListener('change', () => {
+        editTemplateBtn.disabled = !templateSelect.value;
+    });
+
+    templateUpload.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('templateFile', file);
+        appendLog('sys', `Uploading ${file.name}...`);
+        
+        try {
+            const res = await fetch('/api/upload-template', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                appendLog('sys', `Success: ${data.message}`);
+                await fetchTemplates();
+                templateSelect.value = data.filename;
+                editTemplateBtn.disabled = false;
+            } else {
+                appendLog('error', `Upload failed: ${data.error}`);
+            }
+        } catch (err) {
+            appendLog('error', `Upload error: ${err.message}`);
+        }
+        e.target.value = '';
+    });
+
+    // Editor Modal Logic
+    editTemplateBtn.addEventListener('click', async () => {
+        const name = templateSelect.value;
+        if (!name) return;
+        
+        try {
+            const res = await fetch(`/api/template-content?name=${encodeURIComponent(name)}`);
+            const data = await res.json();
+            if (res.ok) {
+                editingTemplateName.textContent = name;
+                templateCode.value = data.content;
+                updatePreview();
+                editorModal.classList.remove('hidden');
+            } else {
+                appendLog('error', `Failed to load template: ${data.error}`);
+            }
+        } catch (err) {
+            appendLog('error', `Network error: ${err.message}`);
+        }
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        editorModal.classList.add('hidden');
+    });
+
+    templateCode.addEventListener('input', updatePreview);
+
+    function updatePreview() {
+        const html = templateCode.value;
+        const doc = templatePreview.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+    }
+
+    saveTemplateBtn.addEventListener('click', async () => {
+        const name = editingTemplateName.textContent;
+        const content = templateCode.value;
+        
+        saveTemplateBtn.textContent = 'Saving...';
+        saveTemplateBtn.disabled = true;
+        
+        try {
+            const res = await fetch('/api/template-content', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, content })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                appendLog('sys', `Template saved: ${name}`);
+                editorModal.classList.add('hidden');
+            } else {
+                alert(`Save failed: ${data.error}`);
+            }
+        } catch (err) {
+            alert(`Error saving: ${err.message}`);
+        } finally {
+            saveTemplateBtn.textContent = 'Save Changes';
+            saveTemplateBtn.disabled = false;
+        }
     });
 
     clearLogsBtn.addEventListener('click', () => {
