@@ -10,14 +10,24 @@ function readCustomers(filePath) {
     const records = parse(fileContent, {
         columns: true,
         skip_empty_lines: true,
-        trim: true
+        trim: true,
+        bom: true
     });
     
-    // Normalize headers to lowercase to handle 'Email', 'EMAIL', etc.
+    // Normalize headers to handle 'Email Address', 'E-mail', 'Name', etc.
     return records.map(row => {
         const normalized = {};
         for (const key in row) {
-            normalized[key.toLowerCase().trim()] = row[key];
+            const cleanKey = key.toLowerCase().trim();
+            const val = row[key] ? row[key].trim() : '';
+            
+            if (cleanKey.includes('email') || cleanKey === 'e-mail') {
+                normalized['email'] = val;
+            } else if (cleanKey.includes('name')) {
+                normalized['name'] = val;
+            } else {
+                normalized[cleanKey] = val;
+            }
         }
         return normalized;
     });
