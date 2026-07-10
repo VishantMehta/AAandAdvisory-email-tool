@@ -13,7 +13,14 @@ function readCustomers(filePath) {
         trim: true
     });
     
-    return records; // Array of { name: '...', email: '...' }
+    // Normalize headers to lowercase to handle 'Email', 'EMAIL', etc.
+    return records.map(row => {
+        const normalized = {};
+        for (const key in row) {
+            normalized[key.toLowerCase().trim()] = row[key];
+        }
+        return normalized;
+    });
 }
 
 module.exports = { readCustomers };
